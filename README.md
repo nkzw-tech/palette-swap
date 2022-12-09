@@ -6,7 +6,7 @@ Image palette swapping and color replacement tool based on canvas for Node.js an
 ![image of a video game character](./example/Yoshi-2.png)
 ![image of a video game character](./example/Yoshi-3.png)
 
-## install
+## Installation
 
 ```
 npm install @cnakazawa/palette-swap canvas
@@ -53,7 +53,7 @@ for (const [variant, canvas] of results) {
 }
 ```
 
-### Parameters
+## Parameters
 
 ### `image: Image`
 
@@ -86,11 +86,11 @@ const variantMap = new Map([
 ]);
 ```
 
-#### `staticColors?: Set<HEX>`
+### `staticColors?: Set<HEX>`
 
 A `Set` with a list of HEX values (for example `#000000`) to lock certain colors to the same values. Colors in this set will not be replaced when generating variants. For example when you are palette swapping an image of a car you might want to change the color of the chassis but not the color of the tires and the outline. If this parameter is omitted it will copy any colors from the base image that are not explicitly listed in the variants definition.
 
-## `images?: ReadonlyMap<VariantName, Image>`
+### `images?: ReadonlyMap<VariantName, Image>`
 
 If you want to avoid returning variants for images that have not changed, you can add an optional `images` parameter with the current image for each variant. If the image hasn't changed, the variant will not be returned in the results.
 
@@ -110,6 +110,6 @@ const results = paletteSwap(
 );
 ```
 
-#### `options?: { imageName?: string; ignoreMissing?: boolean; }`
+### `options?: { imageName?: string; ignoreMissing?: boolean; }`
 
 By default `paletteSwap` will throw an error for any missing color mapping. Options can be specified to ignore missing color mappings or to provide an image name used for the error message when a color mapping is missing.
