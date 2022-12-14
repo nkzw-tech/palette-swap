@@ -5,7 +5,7 @@
   "description": "Image palette swapping and color replacement tool based on canvas for Node.js and browsers.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/cnakazawa/palette-swap.git"
+    "url": "https://github.com/cpojer/palette-swap.git"
   },
   "license": "MIT",
   "main": "lib/palette-swap.js",
