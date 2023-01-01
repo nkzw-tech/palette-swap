@@ -197,9 +197,12 @@ export default function paletteSwap(
       const g = imageData.data[i + 1];
       const b = imageData.data[i + 2];
       const a = imageData.data[i + 3];
-      const hex = rgbaToHex(r, g, b, a);
+      const hex = rgbaToHex(r, g, b);
 
-      let newColor = typeof palette === 'number' ? palette : palette.get(hex);
+      let newColor =
+        typeof palette === 'number'
+          ? palette
+          : palette.get(rgbaToHex(r, g, b, a)) || palette.get(hex);
       if (typeof newColor === 'number') {
         if (staticColors?.has(hex)) {
           set(newImageData, i, r, g, b, a);
