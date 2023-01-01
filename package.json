@@ -1,6 +1,6 @@
 {
   "name": "@cnakazawa/palette-swap",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "author": "Christoph Nakazawa <christoph.pojer@gmail.com>",
   "description": "Image palette swapping and color replacement tool based on canvas for Node.js and browsers.",
   "repository": {
