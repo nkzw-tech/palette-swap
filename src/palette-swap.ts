@@ -219,7 +219,7 @@ export default function paletteSwap(
       }
 
       const [newR, newG, newB, newA] = hexToRgba(newColor);
-      set(newImageData, i, newR, newG, newB, newA != null ? newA : 255);
+      set(newImageData, i, newR, newG, newB, newA != null ? newA : a);
     }
 
     if (!options?.ignoreMissing && missing.size) {
