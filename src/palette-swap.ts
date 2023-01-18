@@ -2,58 +2,43 @@ import {
   Canvas,
   createCanvas,
   createImageData,
-  Image as CanvasImage,
+  Image,
+  ImageData,
 } from 'canvas';
 
 type RGB = [red: number, green: number, blue: number];
 type Hue = number;
-type RGBA = [...RGB, number?];
-type Image = CanvasImage | HTMLImageElement;
 
 export type HEX = `#${string}`;
 export type HSL = [hue: number, saturation: number, lightness: number];
 export type VariantName = number | string;
-export type Variant = HEX | Hue;
+
+const hexToInt32 = (hex: HEX) => {
+  const n = Number.parseInt(hex.slice(1), 16) & 0x00ffffff;
+  const [r, g, b] = int32ToRgb(n);
+  return (b << 16) | (g << 8) | r;
+};
+
+const int32ToRgb = (color: number): RGB => {
+  const r = (color >> 16) & 0xff;
+  const g = (color >> 8) & 0xff;
+  const b = color & 0xff;
+  return [r, g, b];
+};
 
 const hex = (value: number) => Math.round(value).toString(16).padStart(2, '0');
+const rgbToHex = ([r, g, b]: RGB): HEX => `#${hex(r)}${hex(g)}${hex(b)}`;
+const int32ToHex = (color: number) => rgbToHex(int32ToRgb(color));
 
-const rgbaToHex = (...[r, g, b, a]: RGBA): HEX => {
-  return `#${hex(r)}${hex(g)}${hex(b)}${a && a !== 255 ? hex(a) : ''}`;
-};
-
-const hexToRgba = (hex: HEX) => {
-  const match = hex.match(/\w\w/g);
-  if (!match) {
-    throw new Error(`Invalid color '${hex}'.`);
-  }
-  return match.map((part) => Number.parseInt(part, 16));
-};
-
-const rgbToHsl = (rgb: RGB) => {
+const applyHue = (rgb: RGB, hue: number) => {
+  const h = hue / 360;
   const r = rgb[0] / 255;
   const g = rgb[1] / 255;
   const b = rgb[2] / 255;
   const min = Math.min(r, g, b);
   const max = Math.max(r, g, b);
   const delta = max - min;
-  let h = 0;
   let s;
-
-  if (max === min) {
-    h = 0;
-  } else if (r === max) {
-    h = (g - b) / delta;
-  } else if (g === max) {
-    h = 2 + (b - r) / delta;
-  } else if (b === max) {
-    h = 4 + (r - g) / delta;
-  }
-
-  h = Math.min(h * 60, 360);
-  if (h < 0) {
-    h += 360;
-  }
-
   const l = (min + max) / 2;
   if (max === min) {
     s = 0;
@@ -63,20 +48,13 @@ const rgbToHsl = (rgb: RGB) => {
     s = delta / (2 - max - min);
   }
 
-  return [h, s * 100, l * 100];
-};
-
-const hslToRgb = (hsl: HSL) => {
-  const h = hsl[0] / 360;
-  const s = hsl[1] / 100;
-  const l = hsl[2] / 100;
   let t2;
   let t3;
   let val;
 
   if (s === 0) {
     val = l * 255;
-    return [val, val, val];
+    return (val << 16) | (val << 8) | val;
   }
 
   if (l < 0.5) {
@@ -86,9 +64,9 @@ const hslToRgb = (hsl: HSL) => {
   }
 
   const t1 = 2 * l - t2;
-  const rgb = [0, 0, 0];
+  const result = [0, 0, 0];
   for (let i = 0; i < 3; i++) {
-    t3 = h + (1 / 3) * -(i - 1);
+    t3 = h + (1 / 3) * -(2 - i - 1);
     if (t3 < 0) {
       t3++;
     }
@@ -107,26 +85,10 @@ const hslToRgb = (hsl: HSL) => {
       val = t1;
     }
 
-    rgb[i] = val * 255;
+    result[i] = val * 255;
   }
 
-  return rgb;
-};
-
-const hslToHex = (hsl: HSL) => {
-  const [r, g, b] = hslToRgb(hsl);
-  return rgbaToHex(r, g, b);
-};
-
-const applyHue = (
-  r: number,
-  g: number,
-  b: number,
-  a: number,
-  hue: number,
-): HEX => {
-  const [, s, l] = rgbToHsl([r, g, b]);
-  return (hslToHex([hue, s, l]) + hex(a)) as HEX;
+  return (result[0] << 16) | (result[1] << 8) | result[2];
 };
 
 const createCanvasFromImage = (image: Image) => {
@@ -148,23 +110,9 @@ const equals = (a: ImageData, b: ImageData) => {
   return true;
 };
 
-const set = (
-  imageData: ImageData,
-  index: number,
-  r: number,
-  g: number,
-  b: number,
-  a: number,
-) => {
-  imageData.data[index] = r;
-  imageData.data[index + 1] = g;
-  imageData.data[index + 2] = b;
-  imageData.data[index + 3] = a;
-};
-
 export default function paletteSwap(
   image: Image,
-  variants: ReadonlyMap<VariantName, ReadonlyMap<HEX, Variant> | Hue>,
+  inputVariants: ReadonlyMap<VariantName, ReadonlyMap<HEX, HEX> | Hue>,
   staticColors?: Set<HEX> | null,
   images?: ReadonlyMap<VariantName, Image> | null,
   options?: {
@@ -175,68 +123,109 @@ export default function paletteSwap(
   const canvas = createCanvasFromImage(image);
   const context = canvas.getContext('2d');
   const { height, width } = canvas;
-  const imageData = context.getImageData(0, 0, width, height);
+  const imageData = new Uint32Array(
+    context.getImageData(0, 0, width, height).data.buffer,
+  );
   const results = new Map();
 
-  for (const [variant, palette] of variants) {
-    const existingImage = images?.get(variant);
+  const variants: Array<
+    [
+      name: VariantName,
+      imageData: ImageData,
+      buffer: Uint32Array,
+      variants: Hue | null,
+    ]
+  > = [];
+  let i = 0;
+  const palettes = new Map<number, Array<number>>();
+  for (const [variant, palette] of inputVariants) {
+    const newImageData = createImageData(
+      new Uint8ClampedArray(width * height * 4),
+      width,
+    );
+    if (typeof palette !== 'number') {
+      for (const [key, value] of palette) {
+        const k = hexToInt32(key);
+        const v = palettes.get(k) || [];
+        v[i] = hexToInt32(value);
+        palettes.set(k, v);
+      }
+    }
+    variants.push([
+      variant,
+      newImageData,
+      new Uint32Array(newImageData.data.buffer),
+      typeof palette === 'number' ? palette : null,
+    ]);
+
+    i++;
+  }
+  const staticColorNumbers = staticColors
+    ? new Set([...staticColors].map(hexToInt32))
+    : null;
+
+  const missing = new Set<[VariantName, number]>();
+  for (var y = 0; y < height; ++y) {
+    for (var x = 0; x < width; ++x) {
+      const index = y * width + x;
+      const originalColor = imageData[index];
+      const a = (originalColor >> 24) & 0xff;
+      if (a === 0) {
+        continue;
+      }
+
+      const color = originalColor & 0x00ffffff;
+      const isStatic = staticColorNumbers?.has(color);
+      const colors = !isStatic ? palettes.get(color) : null;
+      for (let i = 0; i < variants.length; i++) {
+        const newImageData = variants[i][2];
+        if (isStatic) {
+          newImageData[index] = originalColor;
+          continue;
+        }
+
+        const hue = variants[i][3];
+        if (hue) {
+          newImageData[index] = (a << 24) | applyHue(int32ToRgb(color), hue);
+        } else if (colors?.[i]) {
+          newImageData[index] = (a << 24) | colors[i];
+        } else if (!staticColorNumbers) {
+          newImageData[index] = originalColor;
+        } else {
+          missing.add([variants[i][0], color]);
+        }
+      }
+    }
+
+    if (!options?.ignoreMissing && missing.size) {
+      throw new Error(
+        `There is no mapping for ${Array.from(
+          new Set([...missing].map(([, color]) => int32ToHex(color))),
+        ).join(', ')} in the palette for ${
+          options?.imageName ? `image '${options?.imageName}' ` : ''
+        }variant(s) '${Array.from(
+          new Set([...missing].map(([name]) => name)),
+        ).join(', ')}'.`,
+      );
+    }
+  }
+
+  for (let i = 0; i < variants.length; i++) {
+    const name = variants[i][0];
+    const existingImage = images?.get(name);
     const existingImageData = existingImage
       ? createCanvasFromImage(existingImage)
           .getContext('2d')
           .getImageData(0, 0, width, height)
       : null;
 
-    const newImageData = createImageData(
-      new Uint8ClampedArray(width * height * 4),
-      width,
-    );
-
-    const missing = new Set<HEX>();
-    for (let i = 0; i < imageData.data.length; i += 4) {
-      const r = imageData.data[i];
-      const g = imageData.data[i + 1];
-      const b = imageData.data[i + 2];
-      const a = imageData.data[i + 3];
-      const hex = rgbaToHex(r, g, b);
-
-      let newColor =
-        typeof palette === 'number'
-          ? palette
-          : palette.get(rgbaToHex(r, g, b, a)) || palette.get(hex);
-      if (typeof newColor === 'number') {
-        if (staticColors?.has(hex)) {
-          set(newImageData, i, r, g, b, a);
-          continue;
-        }
-        newColor = applyHue(r, g, b, a, newColor);
-      } else if (!newColor) {
-        if (!staticColors || staticColors.has(hex)) {
-          set(newImageData, i, r, g, b, a);
-        } else {
-          missing.add(hex);
-        }
-        continue;
-      }
-
-      const [newR, newG, newB, newA] = hexToRgba(newColor);
-      set(newImageData, i, newR, newG, newB, newA != null ? newA : a);
-    }
-
-    if (!options?.ignoreMissing && missing.size) {
-      throw new Error(
-        `There is no mapping for ${[...missing].join(
-          ', ',
-        )} in the palette for ${
-          options?.imageName ? `image '${options?.imageName}' ` : ''
-        } variant '${variant}'.`,
-      );
-    }
-
+    const newImageData = variants[i][1];
     if (!existingImageData || !equals(newImageData, existingImageData)) {
       const newCanvas = createCanvasFromImage(image);
       newCanvas.getContext('2d').putImageData(newImageData, 0, 0);
-      results.set(variant, newCanvas);
+      results.set(name, newCanvas);
     }
   }
+
   return results;
 }

@@ -59,7 +59,7 @@ for (const [variant, canvas] of results) {
 
 The base image that is used for generating each variant.
 
-### `variants: ReadonlyMap<VariantName, ReadonlyMap<HEX, Variant> | Hue>`
+### `variants: ReadonlyMap<VariantName, ReadonlyMap<HEX, HEX> | Hue>`
 
 The color definitions for each variant. You can either provide a list of mappings for each color, a hue for all colors or a hue for individual colors:
 
@@ -75,14 +75,6 @@ const variantMap = new Map([
   ],
   // Change the hue of each color.
   ['Variant2', 130],
-  // Change the hue of specific colors to specific values.
-  [
-    'Variant3',
-    new Map([
-      ['#ff0000', 130],
-      ['#0000ff', 15],
-    ]),
-  ],
 ]);
 ```
 
