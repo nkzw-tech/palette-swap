@@ -2,7 +2,7 @@ import {
   Canvas,
   createCanvas,
   createImageData,
-  Image,
+  Image as CanvasImage,
   ImageData,
 } from 'canvas';
 
@@ -12,6 +12,7 @@ type Hue = number;
 export type HEX = `#${string}`;
 export type HSL = [hue: number, saturation: number, lightness: number];
 export type VariantName = number | string;
+export type Image = CanvasImage | HTMLImageElement;
 
 const hexToInt32 = (hex: HEX) => {
   const n = Number.parseInt(hex.slice(1), 16) & 0x00ffffff;
@@ -94,7 +95,7 @@ const applyHue = (rgb: RGB, hue: number) => {
 const createCanvasFromImage = (image: Image) => {
   const canvas = createCanvas(image.width, image.height);
   const context = canvas.getContext('2d');
-  context.drawImage(image, 0, 0);
+  context.drawImage(image as unknown as CanvasImage, 0, 0);
   return canvas;
 };
 
