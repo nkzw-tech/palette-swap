@@ -18,7 +18,7 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "peerDependencies": {
+  "dependencies": {
     "canvas": "^2.10.2"
   },
   "devDependencies": {
