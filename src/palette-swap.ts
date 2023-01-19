@@ -29,13 +29,16 @@ const int32ToRgb = (color: number): RGB => {
 
 const hex = (value: number) => Math.round(value).toString(16).padStart(2, '0');
 const rgbToHex = ([r, g, b]: RGB): HEX => `#${hex(r)}${hex(g)}${hex(b)}`;
-const int32ToHex = (color: number) => rgbToHex(int32ToRgb(color));
+const int32ToHex = (color: number) => {
+  const [r, g, b] = int32ToRgb(color);
+  return rgbToHex([b, g, r]);
+};
 
 const applyHue = (rgb: RGB, hue: number) => {
   const h = hue / 360;
-  const r = rgb[0] / 255;
+  const r = rgb[2] / 255;
   const g = rgb[1] / 255;
-  const b = rgb[2] / 255;
+  const b = rgb[0] / 255;
   const min = Math.min(r, g, b);
   const max = Math.max(r, g, b);
   const delta = max - min;
@@ -67,7 +70,7 @@ const applyHue = (rgb: RGB, hue: number) => {
   const t1 = 2 * l - t2;
   const result = [0, 0, 0];
   for (let i = 0; i < 3; i++) {
-    t3 = h + (1 / 3) * -(2 - i - 1);
+    t3 = h + (1 / 3) * -(i - 1);
     if (t3 < 0) {
       t3++;
     }
@@ -89,7 +92,7 @@ const applyHue = (rgb: RGB, hue: number) => {
     result[i] = val * 255;
   }
 
-  return (result[0] << 16) | (result[1] << 8) | result[2];
+  return (result[2] << 16) | (result[1] << 8) | result[0];
 };
 
 const createCanvasFromImage = (image: Image) => {
@@ -197,18 +200,21 @@ export default function paletteSwap(
         }
       }
     }
+  }
 
-    if (!options?.ignoreMissing && missing.size) {
-      throw new Error(
-        `There is no mapping for ${Array.from(
-          new Set([...missing].map(([, color]) => int32ToHex(color))),
-        ).join(', ')} in the palette for ${
-          options?.imageName ? `image '${options?.imageName}' ` : ''
-        }variant(s) '${Array.from(
-          new Set([...missing].map(([name]) => name)),
-        ).join(', ')}'.`,
-      );
-    }
+  if (!options?.ignoreMissing && missing.size) {
+    throw new Error(
+      `There is no mapping for ${Array.from(
+        new Set(
+          [...missing].map(
+            ([variant, color]) =>
+              `'${int32ToHex(color)}' in variant '${variant}'`,
+          ),
+        ),
+      ).join(', ')} in the palette${
+        options?.imageName ? ` for image '${options?.imageName}'` : ''
+      }.`,
+    );
   }
 
   for (let i = 0; i < variants.length; i++) {
