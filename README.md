@@ -1,4 +1,4 @@
-# @cnakazawa/palette-swap
+# @nkzw/palette-swap
 
 Image palette swapping and color replacement tool based on canvas for Node.js and browsers to create variants from a base image.
 
@@ -9,7 +9,7 @@ Image palette swapping and color replacement tool based on canvas for Node.js an
 ## Installation
 
 ```
-npm install @cnakazawa/palette-swap canvas
+npm install @nkzw/palette-swap canvas
 ```
 
 ## Usage
