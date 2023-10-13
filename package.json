@@ -22,11 +22,11 @@
     "canvas": "^2.11.2"
   },
   "devDependencies": {
-    "@types/color-convert": "^2.0.0",
-    "@types/node": "^20.4.7",
+    "@types/color-convert": "^2.0.1",
+    "@types/node": "^20.8.5",
     "canvas": "^2.11.0",
-    "esbuild": "^0.18.17",
-    "typescript": "^5.1.6"
+    "esbuild": "^0.19.4",
+    "typescript": "^5.2.2"
   },
   "scripts": {
     "build": "mkdir -p lib && rm lib/*; tsc --declaration --emitDeclarationOnly --noEmit false && esbuild --target=node18 --format=esm --platform=node --outfile=lib/palette-swap.js --external:canvas --bundle ./src/palette-swap.js",
