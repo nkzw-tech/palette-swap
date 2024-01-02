@@ -122,13 +122,13 @@ export default function paletteSwap(
   options?: {
     imageName?: string;
     ignoreMissing?: boolean;
-  },
+  }
 ): ReadonlyMap<VariantName, Canvas> {
   const canvas = createCanvasFromImage(image);
   const context = canvas.getContext('2d');
   const { height, width } = canvas;
   const imageData = new Uint32Array(
-    context.getImageData(0, 0, width, height).data.buffer,
+    context.getImageData(0, 0, width, height).data.buffer
   );
   const results = new Map();
 
@@ -137,7 +137,7 @@ export default function paletteSwap(
       name: VariantName,
       imageData: ImageData,
       buffer: Uint32Array,
-      variants: Hue | null,
+      variants: Hue | null
     ]
   > = [];
   let i = 0;
@@ -145,7 +145,7 @@ export default function paletteSwap(
   for (const [variant, palette] of inputVariants) {
     const newImageData = createImageData(
       new Uint8ClampedArray(width * height * 4),
-      width,
+      width
     );
     if (typeof palette !== 'number') {
       for (const [key, value] of palette) {
@@ -204,16 +204,15 @@ export default function paletteSwap(
 
   if (!options?.ignoreMissing && missing.size) {
     throw new Error(
-      `There is no mapping for ${Array.from(
+      `${
+        options?.imageName ? `${options.imageName}` : 'Pallete Swap'
+      }: Missing ${Array.from(
         new Set(
           [...missing].map(
-            ([variant, color]) =>
-              `'${int32ToHex(color)}' in variant '${variant}'`,
-          ),
-        ),
-      ).join(', ')} in the palette${
-        options?.imageName ? ` for image '${options?.imageName}'` : ''
-      }.`,
+            ([variant, color]) => `'${int32ToHex(color)}' in '${variant}'`
+          )
+        )
+      ).join(', ')}.`
     );
   }
 
